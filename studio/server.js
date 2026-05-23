@@ -240,6 +240,31 @@ app.get('/api/result/:id', async (req, res) => {
   }
 });
 
+const OUTPUT_DIR = path.join(__dirname, '..', 'media_outputs');
+if (!fs.existsSync(OUTPUT_DIR)) fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+
+app.post('/api/save', async (req, res) => {
+  const { url, model } = req.body;
+  if (!url) return res.status(400).json({ error: 'No URL' });
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
+
+    const ext = (url.split('?')[0].split('.').pop() || 'bin').toLowerCase();
+    const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const safeModel = (model || 'media').replace(/[^a-z0-9_-]/gi, '_').slice(0, 40);
+    const filename = `${ts}_${safeModel}.${ext}`;
+    const filepath = path.join(OUTPUT_DIR, filename);
+
+    const buffer = await response.buffer();
+    fs.writeFileSync(filepath, buffer);
+    res.json({ saved: true, path: filepath, filename });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/balance', async (req, res) => {
   const apiKey = req.headers['x-api-key'];
   if (!apiKey) return res.status(401).json({ error: 'No API key' });

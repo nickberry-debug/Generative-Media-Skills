@@ -963,6 +963,7 @@
       : `<img class="result-media" src="${escapeAttr(url)}" loading="lazy" alt="${escapeAttr(prompt)}"
             draggable="true" ondragstart="dragStart(event, '${escapeAttr(url)}', this.closest('.result-card'))" ondragend="dragEnd(this.closest('.result-card'))">`;
 
+    const savedId = id + '-saved';
     card.className = 'result-card';
     card.innerHTML = `
       ${mediaTag}
@@ -972,9 +973,34 @@
         <div class="result-actions">
           <a class="btn-sm" href="${escapeAttr(url)}" download target="_blank">⬇ Download</a>
           ${!isVid ? `<button class="btn-sm use-image" onclick="useAsSource('${escapeAttr(url)}')">✨ Animate</button>` : ''}
+          <span class="btn-sm" id="${savedId}" style="background:rgba(52,211,153,0.08);border-color:rgba(52,211,153,0.3);color:var(--success)">💾 Saving…</span>
         </div>
       </div>
     `;
+
+    autoSave(url, modelLabel, savedId);
+  }
+
+  async function autoSave(url, modelLabel, savedId) {
+    try {
+      const res = await fetch('/api/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, model: modelLabel }),
+      });
+      const data = await res.json();
+      const el = document.getElementById(savedId);
+      if (data.saved && el) {
+        el.textContent = '✓ Saved';
+        el.title = data.path;
+      } else if (el) {
+        el.textContent = '✕ Save failed';
+        el.style.color = 'var(--error)';
+      }
+    } catch (e) {
+      const el = document.getElementById(savedId);
+      if (el) { el.textContent = '✕ Save failed'; el.style.color = 'var(--error)'; }
+    }
   }
 
   function dragStart(e, url, card) {
