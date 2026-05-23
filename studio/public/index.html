@@ -661,11 +661,9 @@
 
   init();
 
-  // Heartbeat — keep the server alive while this tab is open
+  // Heartbeat — keep the server alive while this tab is open (even when minimized)
   setInterval(() => {
-    if (!document.hidden) {
-      fetch('/api/heartbeat').catch(() => {});
-    }
+    fetch('/api/heartbeat').catch(() => {});
   }, 20000);
 
   async function loadBalance() {
@@ -862,12 +860,7 @@
       if (!uploadedImageUrl) { toast('Upload or paste an image URL', 'error'); return; }
     }
 
-    const btn = document.getElementById('generateBtn');
-    btn.disabled = true;
-    btn.classList.add('loading');
-    btn.textContent = 'Generating…';
-
-    const cardId = 'card-' + Date.now();
+    const cardId = 'card-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
     addLoadingCard(cardId, selectedModel.label);
 
     const payload = {
@@ -879,35 +872,40 @@
     if (isVideo) payload.duration = parseInt(document.getElementById('duration').value);
     if (currentMode === 'Image to Video') payload.image_url = uploadedImageUrl;
 
-    try {
-      const res = await fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': key },
-        body: JSON.stringify({ model: selectedModel.id, payload }),
-      });
-      const data = await res.json();
+    // Capture model label for closure — selectedModel may change before this finishes
+    const modelLabelForCard = selectedModel.label;
+    const modelIdForCard = selectedModel.id;
 
-      if (data.error || (data.detail && !data.request_id)) {
-        throw new Error(data.error || data.detail);
-      }
+    // Run in the background — don't await, so the user can submit more
+    (async () => {
+      try {
+        const res = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-api-key': key },
+          body: JSON.stringify({ model: modelIdForCard, payload }),
+        });
+        const data = await res.json();
 
-      const requestId = data.request_id;
-      if (!requestId) {
-        const outputs = data.outputs || data.images || data.videos || [];
-        if (outputs.length) replaceLoadingCard(cardId, outputs[0], selectedModel.label, prompt, isVideo);
-        else throw new Error('No output in response');
-      } else {
-        await pollResult(requestId, cardId, selectedModel.label, prompt, isVideo, key);
+        if (data.error || (data.detail && !data.request_id)) {
+          throw new Error(data.error || data.detail);
+        }
+
+        const requestId = data.request_id;
+        if (!requestId) {
+          const outputs = data.outputs || data.images || data.videos || [];
+          if (outputs.length) replaceLoadingCard(cardId, outputs[0], modelLabelForCard, prompt, isVideo);
+          else throw new Error('No output in response');
+        } else {
+          await pollResult(requestId, cardId, modelLabelForCard, prompt, isVideo, key);
+        }
+        loadBalance();
+      } catch (err) {
+        removeLoadingCard(cardId);
+        toast(`${modelLabelForCard}: ${err.message}`, 'error');
       }
-      loadBalance();
-    } catch (err) {
-      removeLoadingCard(cardId);
-      toast(err.message, 'error');
-    } finally {
-      btn.disabled = false;
-      btn.classList.remove('loading');
-      btn.textContent = 'Generate';
-    }
+    })();
+
+    toast(`Queued: ${modelLabelForCard}`, 'success');
   }
 
   async function pollResult(requestId, cardId, modelLabel, prompt, isVideo, key) {
