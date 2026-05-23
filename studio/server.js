@@ -192,7 +192,7 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
     form.append('file', fs.createReadStream(req.file.path), req.file.originalname);
     const response = await fetch(`${BASE_URL}/upload`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${apiKey}`, ...form.getHeaders() },
+      headers: { 'x-api-key': apiKey, ...form.getHeaders() },
       body: form,
     });
     fs.unlinkSync(req.file.path);
@@ -215,7 +215,7 @@ app.post('/api/generate', async (req, res) => {
   try {
     const response = await fetch(`${BASE_URL}/${endpoint}`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      headers: { 'x-api-key': apiKey, 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
     const data = await response.json();
@@ -232,7 +232,7 @@ app.get('/api/result/:id', async (req, res) => {
   try {
     const response = await fetch(
       `${BASE_URL}/predict/result?request_id=${req.params.id}`,
-      { headers: { Authorization: `Bearer ${apiKey}` } }
+      { headers: { 'x-api-key': apiKey } }
     );
     res.json(await response.json());
   } catch (err) {
@@ -246,7 +246,7 @@ app.get('/api/balance', async (req, res) => {
 
   try {
     const response = await fetch(`${BASE_URL}/account/balance`, {
-      headers: { Authorization: `Bearer ${apiKey}` },
+      headers: { 'x-api-key': apiKey },
     });
     res.json(await response.json());
   } catch (err) {
