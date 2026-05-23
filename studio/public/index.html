@@ -661,6 +661,13 @@
 
   init();
 
+  // Heartbeat — keep the server alive while this tab is open
+  setInterval(() => {
+    if (!document.hidden) {
+      fetch('/api/heartbeat').catch(() => {});
+    }
+  }, 20000);
+
   async function loadBalance() {
     const key = getKey();
     if (!key) return;

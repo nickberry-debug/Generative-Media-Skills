@@ -12,6 +12,22 @@ const upload = multer({ dest: 'uploads/' });
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// ── Auto-shutdown on inactivity ──────────────────────────────────────────────
+const IDLE_TIMEOUT_MS = 45 * 1000;
+let lastActivity = Date.now();
+
+app.use((req, res, next) => {
+  lastActivity = Date.now();
+  next();
+});
+
+setInterval(() => {
+  if (Date.now() - lastActivity > IDLE_TIMEOUT_MS) {
+    console.log(`\n  Idle for ${IDLE_TIMEOUT_MS / 1000}s — shutting down.`);
+    process.exit(0);
+  }
+}, 5000);
+
 const SCHEMA = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'schema_data.json'), 'utf8'));
 const BASE_URL = 'https://api.muapi.ai/api/v1';
 
@@ -174,6 +190,8 @@ function getModels() {
 }
 
 // ── API Routes ────────────────────────────────────────────────────────────────
+
+app.get('/api/heartbeat', (req, res) => res.json({ alive: true }));
 
 app.get('/api/models', (req, res) => res.json(getModels()));
 
