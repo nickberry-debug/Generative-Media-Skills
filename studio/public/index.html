@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generative Media Studio</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0d0f;
+    --surface: #18181c;
+    --surface2: #22222a;
+    --border: #2e2e38;
+    --accent: #7c6af7;
+    --accent2: #a78bfa;
+    --text: #e8e8f0;
+    --muted: #888899;
+    --success: #34d399;
+    --error: #f87171;
+    --radius: 10px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Header */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    font-size: 18px;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.3px;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .balance-chip {
+    font-size: 13px;
+    color: var(--muted);
+    background: var(--surface2);
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+  }
+
+  .balance-chip span { color: var(--success); font-weight: 600; }
+
+  /* Key input */
+  .key-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .key-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 13px;
+    padding: 6px 10px;
+    width: 280px;
+    outline: none;
+    transition: border-color .2s;
+  }
+
+  .key-input:focus { border-color: var(--accent); }
+
+  /* Layout */
+  .layout {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    height: calc(100vh - 57px);
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 260px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .mode-tabs {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 16px 12px 8px;
+  }
+
+  .mode-tab {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--muted);
+    transition: all .15s;
+    border: none;
+    background: none;
+    text-align: left;
+    width: 100%;
+  }
+
+  .mode-tab:hover { background: var(--surface2); color: var(--text); }
+  .mode-tab.active { background: var(--accent); color: #fff; }
+  .mode-tab .icon { font-size: 16px; }
+
+  .sidebar-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    color: var(--muted);
+    padding: 16px 16px 6px;
+  }
+
+  .model-search {
+    margin: 0 12px 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 13px;
+    padding: 7px 10px;
+    outline: none;
+    width: calc(100% - 24px);
+  }
+
+  .model-search:focus { border-color: var(--accent); }
+
+  .model-list {
+    overflow-y: auto;
+    flex: 1;
+    padding: 0 8px 12px;
+  }
+
+  .model-list::-webkit-scrollbar { width: 4px; }
+  .model-list::-webkit-scrollbar-track { background: transparent; }
+  .model-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .model-item {
+    padding: 8px 10px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--muted);
+    transition: all .15s;
+    border: 1px solid transparent;
+  }
+
+  .model-item:hover { background: var(--surface2); color: var(--text); }
+
+  .model-item.selected {
+    background: rgba(124, 106, 247, 0.15);
+    border-color: rgba(124, 106, 247, 0.4);
+    color: var(--accent2);
+  }
+
+  .model-item .model-name { font-weight: 500; margin-bottom: 2px; }
+  .model-item .model-family { font-size: 11px; opacity: .6; }
+
+  /* Main area */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Controls panel */
+  .controls {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .selected-model-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+  }
+
+  .badge {
+    background: rgba(124, 106, 247, 0.2);
+    color: var(--accent2);
+    border: 1px solid rgba(124, 106, 247, 0.3);
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .prompt-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+  }
+
+  .prompt-wrap { flex: 1; }
+
+  label {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+
+  textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-size: 14px;
+    padding: 10px 14px;
+    resize: none;
+    outline: none;
+    font-family: inherit;
+    line-height: 1.5;
+    transition: border-color .2s;
+  }
+
+  textarea:focus { border-color: var(--accent); }
+
+  .options-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .option-group { display: flex; flex-direction: column; }
+
+  select, input[type="number"] {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 13px;
+    padding: 7px 10px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  select { min-width: 140px; }
+  input[type="number"] { width: 90px; }
+
+  select:focus, input[type="number"]:focus { border-color: var(--accent); }
+
+  /* Image upload */
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .upload-zone:hover { border-color: var(--accent); background: rgba(124,106,247,.05); }
+  .upload-zone.has-image { padding: 0; border-style: solid; }
+
+  .upload-zone img {
+    max-height: 140px;
+    max-width: 100%;
+    border-radius: 8px;
+    display: block;
+    margin: 0 auto;
+  }
+
+  .upload-zone input[type="file"] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+
+  .upload-hint { font-size: 13px; color: var(--muted); }
+  .upload-hint strong { color: var(--accent2); }
+
+  /* URL input for i2v */
+  .url-or { display: flex; align-items: center; gap: 10px; margin: 8px 0; }
+  .url-or span { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .url-or hr { flex: 1; border: none; border-top: 1px solid var(--border); }
+
+  input[type="text"] {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 13px;
+    padding: 8px 12px;
+    outline: none;
+    transition: border-color .2s;
+  }
+
+  input[type="text"]:focus { border-color: var(--accent); }
+
+  /* Generate button */
+  .btn-generate {
+    background: linear-gradient(135deg, var(--accent), #6366f1);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    padding: 11px 28px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity .2s, transform .1s;
+    white-space: nowrap;
+    align-self: flex-end;
+    min-width: 130px;
+  }
+
+  .btn-generate:hover { opacity: .9; }
+  .btn-generate:active { transform: scale(.98); }
+  .btn-generate:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+
+  .btn-generate.loading {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    cursor: not-allowed;
+  }
+
+  /* Results gallery */
+  .gallery-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px;
+  }
+
+  .gallery-area::-webkit-scrollbar { width: 6px; }
+  .gallery-area::-webkit-scrollbar-track { background: transparent; }
+  .gallery-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .gallery-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .gallery-title { font-size: 14px; font-weight: 600; color: var(--muted); }
+
+  .btn-clear {
+    font-size: 12px;
+    color: var(--muted);
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+
+  .btn-clear:hover { color: var(--error); border-color: var(--error); }
+
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+
+  .result-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: border-color .2s;
+  }
+
+  .result-card:hover { border-color: var(--accent); }
+
+  .result-media {
+    width: 100%;
+    display: block;
+    aspect-ratio: 16/9;
+    object-fit: cover;
+    background: var(--surface2);
+  }
+
+  .result-meta {
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .result-model { font-size: 12px; color: var(--accent2); font-weight: 500; }
+  .result-prompt { font-size: 12px; color: var(--muted); line-height: 1.4; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+
+  .result-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 6px;
+  }
+
+  .btn-sm {
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    text-decoration: none;
+    transition: all .15s;
+    display: inline-block;
+  }
+
+  .btn-sm:hover { border-color: var(--accent); color: var(--accent2); }
+
+  .btn-sm.use-image {
+    border-color: rgba(124, 106, 247, 0.3);
+    color: var(--accent2);
+    background: rgba(124, 106, 247, 0.1);
+  }
+
+  /* Loading card */
+  .loading-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .loading-shimmer {
+    aspect-ratio: 16/9;
+    background: linear-gradient(90deg, var(--surface2) 25%, var(--surface) 50%, var(--surface2) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  .loading-meta {
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .spinner {
+    width: 14px; height: 14px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-text { font-size: 12px; color: var(--muted); }
+
+  /* Empty state */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    color: var(--muted);
+    gap: 12px;
+  }
+
+  .empty-icon { font-size: 48px; opacity: .4; }
+  .empty-text { font-size: 14px; }
+
+  /* Toast */
+  .toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 999;
+  }
+
+  .toast {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 13px;
+    animation: slideIn .2s ease;
+    max-width: 320px;
+  }
+
+  .toast.error { border-color: var(--error); color: var(--error); }
+  .toast.success { border-color: var(--success); color: var(--success); }
+
+  @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } }
+
+  /* Responsive */
+  @media (max-width: 700px) {
+    .sidebar { width: 200px; }
+    .key-input { width: 160px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">⚡ Media Studio</div>
+  <div class="header-right">
+    <div class="balance-chip" id="balanceChip">Balance: <span id="balanceAmt">—</span></div>
+    <div class="key-row">
+      <input class="key-input" type="password" id="apiKey" placeholder="muapi API key…" autocomplete="off">
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="mode-tabs">
+      <button class="mode-tab active" data-mode="Text to Image" onclick="setMode(this)">
+        <span class="icon">🖼️</span> Text to Image
+      </button>
+      <button class="mode-tab" data-mode="Text to Video" onclick="setMode(this)">
+        <span class="icon">🎬</span> Text to Video
+      </button>
+      <button class="mode-tab" data-mode="Image to Video" onclick="setMode(this)">
+        <span class="icon">✨</span> Image to Video
+      </button>
+    </div>
+
+    <div class="sidebar-label">Models</div>
+    <input class="model-search" type="text" id="modelSearch" placeholder="Search models…" oninput="filterModels()">
+    <div class="model-list" id="modelList"></div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="controls">
+      <div class="selected-model-badge">
+        <span class="muted" style="color:var(--muted);font-size:13px">Model:</span>
+        <span class="badge" id="selectedModelBadge">none selected</span>
+      </div>
+
+      <!-- Image to Video: image input -->
+      <div id="imageInputSection" style="display:none">
+        <label>Source Image</label>
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+          <input type="file" id="fileInput" accept="image/*" onchange="handleFileSelect(event)">
+          <div class="upload-hint" id="uploadHint">
+            <div style="font-size:28px;margin-bottom:6px">📁</div>
+            <div><strong>Click to upload</strong> or drag & drop</div>
+            <div style="margin-top:4px;font-size:12px">PNG, JPG, WEBP</div>
+          </div>
+        </div>
+        <div class="url-or"><hr><span>or paste URL</span><hr></div>
+        <input type="text" id="imageUrl" placeholder="https://..." oninput="handleUrlInput()">
+      </div>
+
+      <!-- Prompt -->
+      <div class="prompt-row">
+        <div class="prompt-wrap">
+          <label>Prompt</label>
+          <textarea id="prompt" rows="3" placeholder="Describe what you want to generate…"></textarea>
+        </div>
+        <button class="btn-generate" id="generateBtn" onclick="generate()">Generate</button>
+      </div>
+
+      <!-- Options -->
+      <div class="options-row">
+        <div class="option-group">
+          <label>Aspect Ratio</label>
+          <select id="aspectRatio">
+            <option value="16:9">16:9 (Landscape)</option>
+            <option value="9:16">9:16 (Portrait)</option>
+            <option value="1:1">1:1 (Square)</option>
+            <option value="4:3">4:3</option>
+            <option value="3:4">3:4</option>
+            <option value="21:9">21:9 (Ultrawide)</option>
+          </select>
+        </div>
+        <div class="option-group" id="durationGroup" style="display:none">
+          <label>Duration (s)</label>
+          <input type="number" id="duration" value="5" min="3" max="10" step="1">
+        </div>
+      </div>
+    </div>
+
+    <!-- Gallery -->
+    <div class="gallery-area">
+      <div class="gallery-header">
+        <div class="gallery-title" id="galleryTitle">Results</div>
+        <button class="btn-clear" onclick="clearGallery()">Clear</button>
+      </div>
+      <div class="gallery" id="gallery">
+        <div class="empty-state" id="emptyState">
+          <div class="empty-icon">🎨</div>
+          <div class="empty-text">Your generations will appear here</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+  let models = {};
+  let currentMode = 'Text to Image';
+  let selectedModel = null;
+  let uploadedImageUrl = null;
+  let results = [];
+
+  // ── Init ─────────────────────────────────────────────────────────────────
+
+  const savedKey = localStorage.getItem('muapi_key');
+  if (savedKey) document.getElementById('apiKey').value = savedKey;
+
+  document.getElementById('apiKey').addEventListener('change', () => {
+    const key = document.getElementById('apiKey').value.trim();
+    if (key) {
+      localStorage.setItem('muapi_key', key);
+      loadBalance();
+    }
+  });
+
+  async function init() {
+    try {
+      const res = await fetch('/api/models');
+      models = await res.json();
+      renderModelList();
+      if (savedKey) loadBalance();
+    } catch (e) {
+      toast('Failed to load models', 'error');
+    }
+  }
+
+  init();
+
+  // ── Balance ───────────────────────────────────────────────────────────────
+
+  async function loadBalance() {
+    const key = getKey();
+    if (!key) return;
+    try {
+      const res = await fetch('/api/balance', { headers: { 'x-api-key': key } });
+      const data = await res.json();
+      const amt = data.balance ?? data.credits ?? data.usd_balance ?? '?';
+      document.getElementById('balanceAmt').textContent =
+        typeof amt === 'number' ? `$${amt.toFixed(2)}` : amt;
+    } catch {}
+  }
+
+  // ── Mode ──────────────────────────────────────────────────────────────────
+
+  function setMode(btn) {
+    document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    currentMode = btn.dataset.mode;
+    selectedModel = null;
+    document.getElementById('selectedModelBadge').textContent = 'none selected';
+    document.getElementById('modelSearch').value = '';
+
+    const isVideo = currentMode === 'Text to Video' || currentMode === 'Image to Video';
+    const isI2V = currentMode === 'Image to Video';
+
+    document.getElementById('durationGroup').style.display = isVideo ? '' : 'none';
+    document.getElementById('imageInputSection').style.display = isI2V ? '' : 'none';
+
+    renderModelList();
+  }
+
+  // ── Model list ────────────────────────────────────────────────────────────
+
+  function filterModels() {
+    renderModelList();
+  }
+
+  function renderModelList() {
+    const query = document.getElementById('modelSearch').value.toLowerCase();
+    const list = document.getElementById('modelList');
+    const modeModels = models[currentMode] || [];
+
+    const filtered = modeModels.filter(m =>
+      !query || m.label.toLowerCase().includes(query) || m.family.toLowerCase().includes(query)
+    );
+
+    if (!filtered.length) {
+      list.innerHTML = '<div style="padding:12px 10px;font-size:13px;color:var(--muted)">No models found</div>';
+      return;
+    }
+
+    list.innerHTML = filtered.map(m => `
+      <div class="model-item ${selectedModel?.id === m.id ? 'selected' : ''}"
+           onclick="selectModel(${JSON.stringify(m).replace(/"/g, '&quot;')})">
+        <div class="model-name">${m.label}</div>
+        ${m.family ? `<div class="model-family">${m.family}</div>` : ''}
+      </div>
+    `).join('');
+  }
+
+  function selectModel(m) {
+    selectedModel = m;
+    document.getElementById('selectedModelBadge').textContent = m.label;
+    renderModelList();
+  }
+
+  // ── Image upload ──────────────────────────────────────────────────────────
+
+  function handleUrlInput() {
+    const url = document.getElementById('imageUrl').value.trim();
+    uploadedImageUrl = url || null;
+    if (url) {
+      const zone = document.getElementById('uploadZone');
+      zone.classList.add('has-image');
+      document.getElementById('uploadHint').innerHTML = `<img src="${url}" style="max-height:140px">`;
+    }
+  }
+
+  async function handleFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const key = getKey();
+    if (!key) { toast('Enter your API key first', 'error'); return; }
+
+    const zone = document.getElementById('uploadZone');
+    const hint = document.getElementById('uploadHint');
+    hint.innerHTML = '<div class="spinner" style="margin:20px auto"></div>';
+
+    const form = new FormData();
+    form.append('file', file);
+
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'x-api-key': key },
+        body: form,
+      });
+      const data = await res.json();
+      if (data.url) {
+        uploadedImageUrl = data.url;
+        document.getElementById('imageUrl').value = data.url;
+        zone.classList.add('has-image');
+        hint.innerHTML = `<img src="${data.url}" style="max-height:140px;border-radius:8px">`;
+        toast('Image uploaded', 'success');
+      } else {
+        throw new Error(data.error || 'Upload failed');
+      }
+    } catch (e) {
+      hint.innerHTML = `<div style="color:var(--error);font-size:13px">Upload failed: ${e.message}</div>`;
+      toast(e.message, 'error');
+    }
+  }
+
+  // ── Drag & drop ───────────────────────────────────────────────────────────
+
+  const zone = document.getElementById('uploadZone');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.style.borderColor = 'var(--accent)'; });
+  zone.addEventListener('dragleave', () => { zone.style.borderColor = ''; });
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.style.borderColor = '';
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      document.getElementById('fileInput').files = dt.files;
+      handleFileSelect({ target: { files: dt.files } });
+    }
+  });
+
+  // ── Generate ──────────────────────────────────────────────────────────────
+
+  async function generate() {
+    const key = getKey();
+    if (!key) { toast('Enter your API key first', 'error'); return; }
+    if (!selectedModel) { toast('Select a model first', 'error'); return; }
+
+    const prompt = document.getElementById('prompt').value.trim();
+    if (!prompt) { toast('Enter a prompt', 'error'); return; }
+
+    if (currentMode === 'Image to Video') {
+      const urlVal = document.getElementById('imageUrl').value.trim();
+      uploadedImageUrl = urlVal || uploadedImageUrl;
+      if (!uploadedImageUrl) { toast('Upload or paste an image URL', 'error'); return; }
+    }
+
+    const btn = document.getElementById('generateBtn');
+    btn.disabled = true;
+    btn.classList.add('loading');
+    btn.textContent = 'Generating…';
+
+    const cardId = 'card-' + Date.now();
+    addLoadingCard(cardId, selectedModel.label, prompt);
+
+    const payload = {
+      prompt,
+      aspect_ratio: document.getElementById('aspectRatio').value,
+    };
+
+    const isVideo = currentMode === 'Text to Video' || currentMode === 'Image to Video';
+    if (isVideo) payload.duration = parseInt(document.getElementById('duration').value);
+    if (currentMode === 'Image to Video') payload.image_url = uploadedImageUrl;
+
+    try {
+      const res = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': key },
+        body: JSON.stringify({ model: selectedModel.id, payload }),
+      });
+
+      const data = await res.json();
+
+      if (data.error || data.detail) {
+        throw new Error(data.error || data.detail);
+      }
+
+      const requestId = data.request_id;
+      if (!requestId) {
+        // Synchronous response
+        const outputs = data.outputs || data.images || data.videos || [];
+        if (outputs.length) {
+          replaceLoadingCard(cardId, outputs[0], selectedModel.label, prompt, isVideo);
+        } else {
+          throw new Error('No output in response');
+        }
+      } else {
+        // Poll for result
+        await pollResult(requestId, cardId, selectedModel.label, prompt, isVideo, key);
+      }
+
+      loadBalance();
+    } catch (err) {
+      removeLoadingCard(cardId);
+      toast(err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.classList.remove('loading');
+      btn.textContent = 'Generate';
+    }
+  }
+
+  async function pollResult(requestId, cardId, modelLabel, prompt, isVideo, key) {
+    const maxAttempts = 120;
+    let attempt = 0;
+
+    while (attempt < maxAttempts) {
+      await sleep(3000);
+      attempt++;
+
+      try {
+        const res = await fetch(`/api/result/${requestId}`, {
+          headers: { 'x-api-key': key },
+        });
+        const data = await res.json();
+
+        const status = data.status?.toLowerCase();
+
+        if (status === 'success' || status === 'completed' || status === 'done') {
+          const outputs = data.outputs || data.images || data.videos || [];
+          if (outputs.length) {
+            replaceLoadingCard(cardId, outputs[0], modelLabel, prompt, isVideo);
+            return;
+          }
+        }
+
+        if (status === 'failed' || status === 'error') {
+          throw new Error(data.error || 'Generation failed');
+        }
+
+        // Update loading text
+        const el = document.querySelector(`#${cardId} .loading-text`);
+        if (el) el.textContent = `Processing… (${attempt * 3}s)`;
+
+      } catch (err) {
+        if (err.message !== 'Generation failed' && attempt < maxAttempts) continue;
+        throw err;
+      }
+    }
+
+    throw new Error('Timed out waiting for result');
+  }
+
+  // ── Gallery ───────────────────────────────────────────────────────────────
+
+  function addLoadingCard(id, modelLabel, prompt) {
+    document.getElementById('emptyState')?.remove();
+
+    const card = document.createElement('div');
+    card.className = 'loading-card';
+    card.id = id;
+    card.innerHTML = `
+      <div class="loading-shimmer"></div>
+      <div class="loading-meta">
+        <div class="spinner"></div>
+        <div>
+          <div style="font-size:12px;color:var(--accent2);margin-bottom:2px">${modelLabel}</div>
+          <div class="loading-text">Submitting…</div>
+        </div>
+      </div>
+    `;
+    document.getElementById('gallery').prepend(card);
+  }
+
+  function replaceLoadingCard(id, url, modelLabel, prompt, isVideo) {
+    const card = document.getElementById(id);
+    if (!card) return;
+
+    const ext = url.split('?')[0].split('.').pop().toLowerCase();
+    const isVid = isVideo || ['mp4', 'webm', 'mov'].includes(ext);
+    const mediaTag = isVid
+      ? `<video class="result-media" src="${url}" controls playsinline muted></video>`
+      : `<img class="result-media" src="${url}" loading="lazy" alt="${prompt}">`;
+
+    card.className = 'result-card';
+    card.innerHTML = `
+      ${mediaTag}
+      <div class="result-meta">
+        <div class="result-model">${modelLabel}</div>
+        <div class="result-prompt">${prompt}</div>
+        <div class="result-actions">
+          <a class="btn-sm" href="${url}" download target="_blank">⬇ Download</a>
+          ${!isVid ? `<button class="btn-sm use-image" onclick="useAsSource('${url}')">✨ Use as source</button>` : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  function removeLoadingCard(id) {
+    document.getElementById(id)?.remove();
+    if (!document.querySelector('.result-card, .loading-card')) {
+      const es = document.createElement('div');
+      es.className = 'empty-state';
+      es.id = 'emptyState';
+      es.innerHTML = '<div class="empty-icon">🎨</div><div class="empty-text">Your generations will appear here</div>';
+      document.getElementById('gallery').appendChild(es);
+    }
+  }
+
+  function clearGallery() {
+    const gallery = document.getElementById('gallery');
+    gallery.innerHTML = `
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">🎨</div>
+        <div class="empty-text">Your generations will appear here</div>
+      </div>
+    `;
+  }
+
+  function useAsSource(url) {
+    // Switch to i2v mode and pre-fill image
+    document.querySelectorAll('.mode-tab').forEach(t => {
+      if (t.dataset.mode === 'Image to Video') t.click();
+    });
+    document.getElementById('imageUrl').value = url;
+    uploadedImageUrl = url;
+    const zone = document.getElementById('uploadZone');
+    zone.classList.add('has-image');
+    document.getElementById('uploadHint').innerHTML = `<img src="${url}" style="max-height:140px;border-radius:8px">`;
+    toast('Image loaded — pick a model and add a prompt', 'success');
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  function getKey() {
+    return document.getElementById('apiKey').value.trim();
+  }
+
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  function toast(msg, type = '') {
+    const container = document.getElementById('toastContainer');
+    const t = document.createElement('div');
+    t.className = `toast ${type}`;
+    t.textContent = msg;
+    container.appendChild(t);
+    setTimeout(() => t.remove(), 4000);
+  }
+</script>
+</body>
+</html>
